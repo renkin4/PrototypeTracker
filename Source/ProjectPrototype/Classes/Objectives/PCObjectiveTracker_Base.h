@@ -41,7 +41,18 @@ enum class ETrackCondition : uint8
 	/*
 	* This Will Determine what to track
 	*/
-	DistanceBetweenActor
+	DistanceBetweenActor,
+	ActorVariable_Float,
+
+	//Not Working Yet
+	ActorVariable_Vector,
+
+	//Not Working Yet
+	ActorVariable_Boolean,
+	ActorVariable_Int,
+
+	//Not Working Yet
+	ActorArrayLength_Int
 };
 
 USTRUCT(BlueprintType)
@@ -49,20 +60,29 @@ struct PROJECTPROTOTYPE_API FTrackerProperties
 {
 	GENERATED_USTRUCT_BODY()
 	// The Distance between 2 Values that's inserted
-	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Tracker Properties")
+	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
 	float Distance;
 
-	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Tracker Properties")
+	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
 	AActor* TargettedActor;
 
-	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Tracker Properties")
+	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
+	FName TargettedVariableName;
+
+	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
 	AActor* TargettedActor2;
+
+	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
+	FName TargettedVariableName2;
+	
 
 	FTrackerProperties()
 	{
 		Distance = 0.f;
 		TargettedActor = NULL;
 		TargettedActor2 = NULL;
+		TargettedVariableName = TEXT("");
+		TargettedVariableName2 = TEXT("");
 	}
 };
 //TODO shift this branch into another Class
@@ -107,30 +127,41 @@ struct PROJECTPROTOTYPE_API FTrackerBranch
 		case ETrackCondition::DistanceBetweenActor:
 			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedActor2);
 			break;
+		case ETrackCondition::ActorVariable_Boolean:
+
+			break;
+		case ETrackCondition::ActorVariable_Float:
+			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedVariableName, TrackerProperties.TargettedActor2, TrackerProperties.TargettedVariableName2);
+			break;
+		case ETrackCondition::ActorVariable_Int:
+			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedVariableName, TrackerProperties.TargettedActor2, TrackerProperties.TargettedVariableName2);
+			break;
 		default:
 			break;
 		}
 	}
 
 private:
-	void VectorDistanceCal(FVector Loc, FVector Loc2) 
+	// Compare between 2 Numbers. Used Template due to Difference of Datatype
+	template <class TNumbers>
+	TNumbers NumCal(TNumbers Val, TNumbers Val2)
 	{
 		switch (Comparison)
 		{
 		case EComparison::NotEqual:
-			if ((Loc - Loc2).Size() == TrackerProperties.Distance)
+			if (Val != Val2)
 				bCompleted = true;
 			break;
 		case EComparison::Equal:
-			if ((Loc - Loc2).Size() != TrackerProperties.Distance)
+			if (Val == Val2)
 				bCompleted = true;
 			break;
 		case EComparison::MoreThen:
-			if ((Loc - Loc2).Size() > TrackerProperties.Distance)
+			if (Val > Val2)
 				bCompleted = true;
 			break;
 		case EComparison::LessThen:
-			if ((Loc - Loc2).Size() < TrackerProperties.Distance)
+			if (Val < Val2)
 				bCompleted = true;
 			break;
 		case EComparison::NotExist:
@@ -138,13 +169,70 @@ private:
 		default:
 			break;
 		}
+		return bCompleted;
+	}
+
+	// Get Float Variable By Feeding Object Class and Variable Name
+	static bool GetFloatByName(AActor* Target, FName VarName, float & outFloat)
+	{
+		if (Target) //make sure Target was set in blueprints. 
+		{
+			float FoundFloat;
+			UFloatProperty* FloatProp = FindField<UFloatProperty>(Target->GetClass(), VarName);  // try to find float property in Target named VarName
+			if (FloatProp) //if we found variable
+			{
+				FoundFloat = FloatProp->GetPropertyValue_InContainer(Target);  // get the value from FloatProp
+				outFloat = FoundFloat;  // return float
+				return true; // we can return
+			}
+		}
+		return false;
+	}
+
+	// Get Int Variable By Feeding Object Class and Variable Name
+	static bool GetIntByName(AActor * Target, FName VarName, int32 &outInt)
+	{
+		if (Target)
+		{
+			int32 FoundInt;
+			UIntProperty* IntProp = FindField<UIntProperty>(Target->GetClass(), VarName);  //this time I'm using UIntProperty as I'm searching for int
+			if (IntProp)
+			{
+				FoundInt = IntProp->GetPropertyValue_InContainer(Target);
+				outInt = FoundInt;
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// Track Actor Loc to Actor Loc
-	void Track(AActor* TargettedActor, AActor* ActorToCompare) 
+	void Track(AActor* TargettedActor, AActor* TargettedActor2)
 	{
-		VectorDistanceCal(TargettedActor->GetActorLocation(), ActorToCompare->GetActorLocation());
+		NumCal((TargettedActor->GetActorLocation() - TargettedActor2->GetActorLocation()).Size(), TrackerProperties.Distance);
 	}
+
+	// Track Actor Loc to Actor Loc
+	void Track(AActor* TargettedActor, FName TargettedName,AActor* TargettedActor2, FName TargettedName2)
+	{
+		if (TrackCondition == ETrackCondition::ActorArrayLength_Int) 
+		{
+			int32 Out;
+			int32 Out2;
+			GetIntByName(TargettedActor, TargettedName, Out);
+			GetIntByName(TargettedActor2, TargettedName2, Out2);
+			NumCal(Out, Out2);
+		}
+		if (TrackCondition == ETrackCondition::ActorVariable_Float) 
+		{
+			float Out;
+			float Out2;
+			GetFloatByName(TargettedActor, TargettedName, Out);
+			GetFloatByName(TargettedActor2, TargettedName2, Out2);
+			NumCal(Out, Out2);
+		}
+	}
+
 };
 
 UCLASS( ClassGroup=(Tracker), meta=(BlueprintSpawnableComponent) , Blueprintable)

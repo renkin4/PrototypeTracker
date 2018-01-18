@@ -23,16 +23,5 @@ void APCObjective_Base::BeginPlay()
 void APCObjective_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (Target) //make sure Target was set in blueprints. 
-	{
-		float FoundFloat;
-		UFloatProperty* FloatProp = FindField<UFloatProperty>(Target->GetClass(), VarName);  // try to find float property in Target named VarName
-		if (FloatProp) //if we found variable
-		{
-			FoundFloat = FloatProp->GetPropertyValue_InContainer(Target);  // get the value from FloatProp
-			Storage = FoundFloat;
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%f"), Storage));
-		}
-	}
 }
 

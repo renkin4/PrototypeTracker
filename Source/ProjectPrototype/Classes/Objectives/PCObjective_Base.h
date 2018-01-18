@@ -15,12 +15,4 @@ protected:
 	virtual void BeginPlay() override;
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-protected:
-	//test Are
-	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Test")
-	UObject * Target;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Test")
-	FName VarName;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Test")
-	float Storage;
 };
