@@ -34,6 +34,8 @@ void UPCObjectiveTracker_Base::TickComponent(float DeltaTime, ELevelTick TickTyp
 		if (TrackerBranches.bCompleted)
 			SetTrackerState(TrackerBranches.bSuccessBranch ? ETrackerState::Succeed : ETrackerState::Failed);
 	}
+
+
 }
 
 

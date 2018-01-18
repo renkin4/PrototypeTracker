@@ -46,8 +46,6 @@ enum class ETrackCondition : uint8
 
 	//Not Working Yet
 	ActorVariable_Vector,
-
-	//Not Working Yet
 	ActorVariable_Boolean,
 	ActorVariable_Int,
 
@@ -74,7 +72,6 @@ struct PROJECTPROTOTYPE_API FTrackerProperties
 
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
 	FName TargettedVariableName2;
-	
 
 	FTrackerProperties()
 	{
@@ -128,13 +125,13 @@ struct PROJECTPROTOTYPE_API FTrackerBranch
 			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedActor2);
 			break;
 		case ETrackCondition::ActorVariable_Boolean:
-
+			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedVariableName, TrackerProperties.TargettedActor2, TrackerProperties.TargettedVariableName2, false);
 			break;
 		case ETrackCondition::ActorVariable_Float:
-			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedVariableName, TrackerProperties.TargettedActor2, TrackerProperties.TargettedVariableName2);
+			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedVariableName, TrackerProperties.TargettedActor2, TrackerProperties.TargettedVariableName2, 0.0f);
 			break;
 		case ETrackCondition::ActorVariable_Int:
-			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedVariableName, TrackerProperties.TargettedActor2, TrackerProperties.TargettedVariableName2);
+			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedVariableName, TrackerProperties.TargettedActor2, TrackerProperties.TargettedVariableName2, 0);
 			break;
 		default:
 			break;
@@ -175,17 +172,17 @@ private:
 	// Get Float Variable By Feeding Object Class and Variable Name
 	static bool GetFloatByName(AActor* Target, FName VarName, float & outFloat)
 	{
-		if (Target) //make sure Target was set in blueprints. 
+		if (Target)
 		{
 			float FoundFloat;
-			UFloatProperty* FloatProp = FindField<UFloatProperty>(Target->GetClass(), VarName);  // try to find float property in Target named VarName
+			UFloatProperty* FloatProp = FindField<UFloatProperty>(Target->GetClass(), VarName);  
 			if (FloatProp) //if we found variable
 			{
-				FoundFloat = FloatProp->GetPropertyValue_InContainer(Target);  // get the value from FloatProp
+				FoundFloat = FloatProp->GetPropertyValue_InContainer(Target);  
 				outFloat = FoundFloat;  // return float
 				return true; // we can return
 			}
-		}
+		}//TODO add ERROR Message for Edison and TITO if Target Not Found
 		return false;
 	}
 
@@ -195,15 +192,30 @@ private:
 		if (Target)
 		{
 			int32 FoundInt;
-			UIntProperty* IntProp = FindField<UIntProperty>(Target->GetClass(), VarName);  //this time I'm using UIntProperty as I'm searching for int
+			UIntProperty* IntProp = FindField<UIntProperty>(Target->GetClass(), VarName); 
 			if (IntProp)
 			{
 				FoundInt = IntProp->GetPropertyValue_InContainer(Target);
 				outInt = FoundInt;
 				return true;
 			}
-		}
+		}//TODO add ERROR Message for Edison and TITO if Target Not Found
 		return false;
+	}
+	// Get bool Variable By Feeding Object Class and Variable Name
+	static bool GetBoolByName(AActor * Target, FName VarName)
+	{
+		bool FoundBool = false;
+		if (Target)
+		{
+			UBoolProperty* BoolProp = FindField<UBoolProperty>(Target->GetClass(), VarName);
+			if (BoolProp)
+			{
+				FoundBool = BoolProp->GetPropertyValue_InContainer(Target);
+			}
+		}
+		//TODO add ERROR Message for Edison and TITO if Target Not Found
+		return FoundBool;
 	}
 
 	// Track Actor Loc to Actor Loc
@@ -212,27 +224,32 @@ private:
 		NumCal((TargettedActor->GetActorLocation() - TargettedActor2->GetActorLocation()).Size(), TrackerProperties.Distance);
 	}
 
-	// Track Actor Loc to Actor Loc
-	void Track(AActor* TargettedActor, FName TargettedName,AActor* TargettedActor2, FName TargettedName2)
+	// INT Track
+	void Track(AActor* TargettedActor, FName TargettedName,AActor* TargettedActor2, FName TargettedName2,const int32 OutParaInt)
 	{
-		if (TrackCondition == ETrackCondition::ActorArrayLength_Int) 
-		{
-			int32 Out;
-			int32 Out2;
-			GetIntByName(TargettedActor, TargettedName, Out);
-			GetIntByName(TargettedActor2, TargettedName2, Out2);
-			NumCal(Out, Out2);
-		}
-		if (TrackCondition == ETrackCondition::ActorVariable_Float) 
-		{
-			float Out;
-			float Out2;
-			GetFloatByName(TargettedActor, TargettedName, Out);
-			GetFloatByName(TargettedActor2, TargettedName2, Out2);
-			NumCal(Out, Out2);
-		}
+		int32 Out, Out2;
+		GetIntByName(TargettedActor, TargettedName, Out);
+		GetIntByName(TargettedActor2, TargettedName2, Out2);
+		NumCal(Out, Out2);
 	}
 
+	// Float Track
+	void Track(AActor* TargettedActor, FName TargettedName, AActor* TargettedActor2, FName TargettedName2,const float OutParaFloat)
+	{
+		float Out, Out2;
+		GetFloatByName(TargettedActor, TargettedName, Out);
+		GetFloatByName(TargettedActor2, TargettedName2, Out2);
+		NumCal(Out, Out2);
+	}
+
+	// Boolean track
+	void Track(AActor* TargettedActor, FName TargettedName, AActor* TargettedActor2, FName TargettedName2,const bool OutParaBool)
+	{
+		//for boolean Section
+		bool bOut = GetBoolByName(TargettedActor, TargettedName);
+		bool bOut2 = GetBoolByName(TargettedActor2, TargettedName2);
+		NumCal(bOut, bOut2);
+	}
 };
 
 UCLASS( ClassGroup=(Tracker), meta=(BlueprintSpawnableComponent) , Blueprintable)
@@ -271,5 +288,4 @@ public:
 	//Activate Objective
 	UFUNCTION(BlueprintCallable, Category = "Tracker States")
 	void RunState() { CurrentTrackState = ETrackerState::Activated; }
-
 };
