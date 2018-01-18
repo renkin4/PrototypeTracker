@@ -273,4 +273,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Tracker States")
 	void RunState() { CurrentTrackState = ETrackerState::Activated; }
 
+private:
+	int32 CompletedBranches;
 };
