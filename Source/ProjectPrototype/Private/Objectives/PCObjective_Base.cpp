@@ -3,49 +3,26 @@
 #include "Objectives/PCObjective_Base.h"
 
 
-
-// Sets default values for this component's properties
-AObjectivesStatus::AObjectivesStatus()
+// Sets default values
+APCObjective_Base::APCObjective_Base(const class FObjectInitializer & PCIP)
+	:Super(PCIP)
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
+ 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	// ...
 }
 
-
-// Called when the game starts
-void AObjectivesStatus::BeginPlay()
+// Called when the game starts or when spawned
+void APCObjective_Base::BeginPlay()
 {
 	Super::BeginPlay();
-	// ...
-
+	
 }
 
-
 // Called every frame
-void AObjectivesStatus::Tick(float DeltaTime)
+void APCObjective_Base::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// ...
-}
-
-void AObjectivesStatus::UpdateObjectivess(UPCSM_InputAtom * ObjectivesActivity)
-{
-	// Update the master list of everything we've ever done.
-	ObjectivesActivities.Add(ObjectivesActivity);
-
-	// Update individual quests (if they care about this activity) and see if they are complete.
-	for (int32 i = ObjectivesList.Num() - 1; i >= 0; --i)
-	{
-		if (ObjectivesList[i].UpdateObjectives(this, ObjectivesActivity))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Quest \"%s\" completed: %s"),
-				*ObjectivesList[i].Objectives->ObjectivesName.ToString(),
-				(ObjectivesList[i].ObjectivesProgress == EObjectivesCompletion::EQC_Succeeded) ? TEXT("Success") : TEXT("Failure"));
-		}
-	}
 }
 
