@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "UObject/UnrealType.h"
 #include "PCObjectiveTracker_Base.generated.h"
 
 UENUM(BlueprintType)
@@ -170,40 +171,38 @@ private:
 	}
 
 	// Get Float Variable By Feeding Object Class and Variable Name
-	static bool GetFloatByName(AActor* Target, FName VarName, float & outFloat)
+	const float GetFloatByName(const AActor* Target, const FName VarName)
 	{
+		float FoundFloat = FLT_MAX;
 		if (Target)
 		{
-			float FoundFloat;
 			UFloatProperty* FloatProp = FindField<UFloatProperty>(Target->GetClass(), VarName);  
 			if (FloatProp) //if we found variable
 			{
 				FoundFloat = FloatProp->GetPropertyValue_InContainer(Target);  
-				outFloat = FoundFloat;  // return float
-				return true; // we can return
+				return FoundFloat; // we can return
 			}
 		}//TODO add ERROR Message for Edison and TITO if Target Not Found
-		return false;
+		return FoundFloat;
 	}
 
 	// Get Int Variable By Feeding Object Class and Variable Name
-	static bool GetIntByName(AActor * Target, FName VarName, int32 &outInt)
+	const int32 GetIntByName(const AActor * Target, const FName VarName)
 	{
+		int32 FoundInt = MAX_int32;
 		if (Target)
 		{
-			int32 FoundInt;
 			UIntProperty* IntProp = FindField<UIntProperty>(Target->GetClass(), VarName); 
 			if (IntProp)
 			{
 				FoundInt = IntProp->GetPropertyValue_InContainer(Target);
-				outInt = FoundInt;
-				return true;
+				return FoundInt;
 			}
 		}//TODO add ERROR Message for Edison and TITO if Target Not Found
-		return false;
+		return FoundInt;
 	}
 	// Get bool Variable By Feeding Object Class and Variable Name
-	static bool GetBoolByName(AActor * Target, FName VarName)
+	const bool GetBoolByName(const AActor * Target, const FName VarName)
 	{
 		bool FoundBool = false;
 		if (Target)
@@ -219,31 +218,29 @@ private:
 	}
 
 	// Track Actor Loc to Actor Loc
-	void Track(AActor* TargettedActor, AActor* TargettedActor2)
+	void Track(const AActor* TargettedActor, const AActor* TargettedActor2)
 	{
 		NumCal((TargettedActor->GetActorLocation() - TargettedActor2->GetActorLocation()).Size(), TrackerProperties.Distance);
 	}
 
 	// INT Track
-	void Track(AActor* TargettedActor, FName TargettedName,AActor* TargettedActor2, FName TargettedName2,const int32 OutParaInt)
+	void Track(const AActor* TargettedActor, const FName TargettedName, const AActor* TargettedActor2, const FName TargettedName2,const int32 DummyInt)
 	{
-		int32 Out, Out2;
-		GetIntByName(TargettedActor, TargettedName, Out);
-		GetIntByName(TargettedActor2, TargettedName2, Out2);
+		int32 Out = GetIntByName(TargettedActor, TargettedName);
+		int32 Out2 = GetIntByName(TargettedActor2, TargettedName2);
 		NumCal(Out, Out2);
 	}
 
 	// Float Track
-	void Track(AActor* TargettedActor, FName TargettedName, AActor* TargettedActor2, FName TargettedName2,const float OutParaFloat)
+	void Track(const AActor* TargettedActor, const FName TargettedName, const AActor* TargettedActor2, const FName TargettedName2,const float DummyFloat)
 	{
-		float Out, Out2;
-		GetFloatByName(TargettedActor, TargettedName, Out);
-		GetFloatByName(TargettedActor2, TargettedName2, Out2);
+		float Out = GetFloatByName(TargettedActor, TargettedName);
+		float Out2 = GetFloatByName(TargettedActor2, TargettedName2);
 		NumCal(Out, Out2);
 	}
 
 	// Boolean track
-	void Track(AActor* TargettedActor, FName TargettedName, AActor* TargettedActor2, FName TargettedName2,const bool OutParaBool)
+	void Track(const AActor* TargettedActor, const FName TargettedName, const AActor* TargettedActor2, const FName TargettedName2,const bool DummyBool)
 	{
 		//for boolean Section
 		bool bOut = GetBoolByName(TargettedActor, TargettedName);
@@ -257,9 +254,6 @@ class PROJECTPROTOTYPE_API UPCObjectiveTracker_Base : public UActorComponent
 {
 	GENERATED_UCLASS_BODY()
 protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
-
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

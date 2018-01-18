@@ -14,15 +14,6 @@ UPCObjectiveTracker_Base::UPCObjectiveTracker_Base(const class FObjectInitialize
 	// ...
 }
 
-
-// Called when the game starts
-void UPCObjectiveTracker_Base::BeginPlay()
-{
-	Super::BeginPlay();
-
-}
-
-
 // Called every frame
 void UPCObjectiveTracker_Base::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -34,10 +25,7 @@ void UPCObjectiveTracker_Base::TickComponent(float DeltaTime, ELevelTick TickTyp
 		if (TrackerBranches.bCompleted)
 			SetTrackerState(TrackerBranches.bSuccessBranch ? ETrackerState::Succeed : ETrackerState::Failed);
 	}
-
-
 }
-
 
 void UPCObjectiveTracker_Base::SucceededEvent()
 {
