@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{AMMOBOX-UE4}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "ProjectPrototype",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
