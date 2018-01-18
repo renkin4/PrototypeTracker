@@ -76,6 +76,22 @@ void AProjectPrototypeCharacter::SetupPlayerInputComponent(class UInputComponent
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AProjectPrototypeCharacter::OnResetVR);
 }
 
+bool AProjectPrototypeCharacter::GetFloatByName(UObject * Target, FName VarName, float & outFloat)
+{
+	if (Target) //make sure Target was set in blueprints. 
+	{
+		float FoundFloat;
+		UFloatProperty* FloatProp = FindField<UFloatProperty>(Target->GetClass(), VarName);  // try to find float property in Target named VarName
+		if (FloatProp) //if we found variable
+		{
+			FoundFloat = FloatProp->GetPropertyValue_InContainer(Target);  // get the value from FloatProp
+			outFloat = FoundFloat;  // return float
+			return true; // we can return
+		}
+	}
+	return false;
+}
+
 
 void AProjectPrototypeCharacter::OnResetVR()
 {

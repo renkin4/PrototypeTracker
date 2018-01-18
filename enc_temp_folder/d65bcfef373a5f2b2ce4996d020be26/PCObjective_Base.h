@@ -17,10 +17,9 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 protected:
 	//test Are
-	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Test")
+	UPROPERTY(EditInstanceOnly, Category = "Test")
 	UObject * Target;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Test")
+	UPROPERTY(EditAnywhere, Category = "Test")
 	FName VarName;
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Test")
 	float Storage;
 };

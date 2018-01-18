@@ -11,7 +11,6 @@ UPCObjectiveTracker_Base::UPCObjectiveTracker_Base(const class FObjectInitialize
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 	CurrentTrackState = ETrackerState::Idle;
-	CompletedBranches = 0;
 	// ...
 }
 
@@ -29,30 +28,14 @@ void UPCObjectiveTracker_Base::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	//TODO set it to repNotify for these
-	if (CurrentTrackState == ETrackerState::Activated)
+	if (GetTrackerState() == ETrackerState::Activated)
 	{
-		for (FTrackerBranch Branches : TrackerBranches) 
-		{
-			Branches.RunBranch();
-			//Check if the branch is completed
-			if (Branches.bCompleted) 
-			{
-				++CompletedBranches;
-				//If any Failed Branch manage to get completed, Force Break loop and complete Event with Fail State
-				if (!Branches.bSuccessBranch) 
-				{
-					SetTrackerState(ETrackerState::Failed);
-					break;
-				}
-			}
-		}
-		//Check if all objectives complete else recheck
-		if (CompletedBranches == TrackerBranches.Num() && GetTrackerState() != ETrackerState::Failed)
-			SetTrackerState(ETrackerState::Succeed);
-		else
-			CompletedBranches = 0;
+		TrackerBranches.RunBranch();
+		if (TrackerBranches.bCompleted)
+			SetTrackerState(TrackerBranches.bSuccessBranch ? ETrackerState::Succeed : ETrackerState::Failed);
 	}
 }
+
 
 void UPCObjectiveTracker_Base::SucceededEvent()
 {

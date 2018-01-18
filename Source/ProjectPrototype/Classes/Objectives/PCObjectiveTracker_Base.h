@@ -41,10 +41,7 @@ enum class ETrackCondition : uint8
 	/*
 	* This Will Determine what to track
 	*/
-	FloatToFloat,
-	VectorToVector,
-	ActorToActor,
-	VectorToActor
+	DistanceBetweenActor
 };
 
 USTRUCT(BlueprintType)
@@ -61,27 +58,11 @@ struct PROJECTPROTOTYPE_API FTrackerProperties
 	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Tracker Properties")
 	AActor* TargettedActor2;
 
-	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Tracker Properties")
-	FVector TargettedVector;
-
-	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
-	FVector TargettedVector2;
-
-	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Tracker Properties")
-	float FloatVal;
-
-	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Tracker Properties")
-	float FloatVal2;
-
 	FTrackerProperties()
 	{
 		Distance = 0.f;
 		TargettedActor = NULL;
 		TargettedActor2 = NULL;
-		TargettedVector = FVector();
-		TargettedVector2 = FVector();
-		FloatVal = 0.f;
-		FloatVal2 = 0.f;
 	}
 };
 //TODO shift this branch into another Class
@@ -92,66 +73,64 @@ struct PROJECTPROTOTYPE_API FTrackerBranch
 {
 	GENERATED_USTRUCT_BODY()
 
+	// Track Condition are Types of Variable you wish to used to compare with
 	UPROPERTY(EditInstanceOnly, Category = "Tracker")
 	ETrackCondition TrackCondition;
 
+	// Properties that you wish to compare with
 	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Tracker Properties")
 	FTrackerProperties TrackerProperties;
 
+	// Different Parameters to Compare Different Variables
 	UPROPERTY(EditInstanceOnly, Category = "Tracker")
 	EComparison Comparison;
 
+	// If set false, When Branch Completed will be forced to break loop and Set State to Fail
 	UPROPERTY(EditInstanceOnly, Category = "Tracker")
 	uint8 bSuccessBranch : 1;
 
 	uint8 bCompleted : 1;
+
+	// Constructor
 	FTrackerBranch() 
 	{
 		bSuccessBranch = false;
-		bCompleted = false;
 		TrackerProperties = FTrackerProperties();
-		TrackCondition = ETrackCondition::ActorToActor;
+		TrackCondition = ETrackCondition::DistanceBetweenActor;
 	}
+
+	// Start Tracking
 	void RunBranch() 
 	{
 		switch (TrackCondition)
 		{
-		case ETrackCondition::ActorToActor:
+		case ETrackCondition::DistanceBetweenActor:
 			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedActor2);
 			break;
-		case ETrackCondition::FloatToFloat:
-			Track(TrackerProperties.FloatVal, TrackerProperties.FloatVal2);
-			break;
-		case ETrackCondition::VectorToActor:
-			Track(TrackerProperties.TargettedVector, TrackerProperties.TargettedActor);
-			break;
-		case ETrackCondition::VectorToVector:
-			Track(TrackerProperties.TargettedVector, TrackerProperties.TargettedVector2);
-			break;
 		default:
 			break;
 		}
 	}
+
 private:
-	// Track Float To Float
-	void Track(float TargettedFloat, float FloatToCompare) 
+	void VectorDistanceCal(FVector Loc, FVector Loc2) 
 	{
 		switch (Comparison)
 		{
 		case EComparison::NotEqual:
-			if (TargettedFloat != FloatToCompare)
+			if ((Loc - Loc2).Size() == TrackerProperties.Distance)
 				bCompleted = true;
 			break;
 		case EComparison::Equal:
-			if (TargettedFloat == FloatToCompare)
+			if ((Loc - Loc2).Size() != TrackerProperties.Distance)
 				bCompleted = true;
 			break;
 		case EComparison::MoreThen:
-			if (TargettedFloat > FloatToCompare)
+			if ((Loc - Loc2).Size() > TrackerProperties.Distance)
 				bCompleted = true;
 			break;
 		case EComparison::LessThen:
-			if (TargettedFloat < FloatToCompare)
+			if ((Loc - Loc2).Size() < TrackerProperties.Distance)
 				bCompleted = true;
 			break;
 		case EComparison::NotExist:
@@ -160,86 +139,11 @@ private:
 			break;
 		}
 	}
-	// Track Vector To Vector
-	void Track(FVector TargettedVector, FVector VectorToCompare) 
-	{
-		switch (Comparison)
-		{
-		case EComparison::NotEqual:
-			if ((TargettedVector - VectorToCompare).Size() == TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::Equal:
-			if ((TargettedVector - VectorToCompare).Size() != TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::MoreThen:
-			if ((TargettedVector - VectorToCompare).Size() > TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::LessThen:
-			if ((TargettedVector - VectorToCompare).Size() < TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::NotExist:
-			break;
-		default:
-			break;
-		}
-	}
-	// Track Vector to Actor Loc
-	void Track(FVector TargettedVector, AActor* ActorToCompare) 
-	{
-		switch (Comparison)
-		{
-		case EComparison::NotEqual:
-			if ((TargettedVector - ActorToCompare->GetActorLocation()).Size() != TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::Equal:
-			if ((TargettedVector - ActorToCompare->GetActorLocation()).Size() == TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::MoreThen:
-			if ((TargettedVector - ActorToCompare->GetActorLocation()).Size() > TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::LessThen:
-			if ((TargettedVector - ActorToCompare->GetActorLocation()).Size() < TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::NotExist:
-			break;
-		default:
-			break;
-		}
-	}
+
 	// Track Actor Loc to Actor Loc
 	void Track(AActor* TargettedActor, AActor* ActorToCompare) 
 	{
-		switch (Comparison)
-		{
-		case EComparison::NotEqual:
-			if ((TargettedActor->GetActorLocation() - ActorToCompare->GetActorLocation()).Size() != TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::Equal:
-			if ((TargettedActor->GetActorLocation() - ActorToCompare->GetActorLocation()).Size() == TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::MoreThen:
-			if ((TargettedActor->GetActorLocation() - ActorToCompare->GetActorLocation()).Size() > TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::LessThen:
-			if ((TargettedActor->GetActorLocation() - ActorToCompare->GetActorLocation()).Size() < TrackerProperties.Distance)
-				bCompleted = true;
-			break;
-		case EComparison::NotExist:
-			break;
-		default:
-			break;
-		}
+		VectorDistanceCal(TargettedActor->GetActorLocation(), ActorToCompare->GetActorLocation());
 	}
 };
 
@@ -254,25 +158,30 @@ protected:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UPROPERTY(EditInstanceOnly, Category = "Tracker States")
+	//Current State of the Tracker
 	ETrackerState CurrentTrackState;
 
+	//Branches for Multiple task Objectives
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Branches")
-	TArray<FTrackerBranch> TrackerBranches;
+	FTrackerBranch TrackerBranches;
 
+	//Events on Objective Succeeded
 	void SucceededEvent();
+
+	//Event on Objective Failed
 	void FailedEvent();
+
 public:
 	//Set Tracker State and send signal to check if Succeeded
 	UFUNCTION(BlueprintCallable, Category = "Tracker States")
 	void SetTrackerState(ETrackerState SetState);
 
+	//Get Current State For Tracker
 	UFUNCTION(BlueprintPure, Category = "Tracker States")
 	ETrackerState GetTrackerState() { return CurrentTrackState; }
 
+	//Activate Objective
 	UFUNCTION(BlueprintCallable, Category = "Tracker States")
 	void RunState() { CurrentTrackState = ETrackerState::Activated; }
 
-private:
-	int32 CompletedBranches;
 };
