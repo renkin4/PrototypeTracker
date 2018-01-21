@@ -10,8 +10,15 @@ UPCObjectiveTracker_Base::UPCObjectiveTracker_Base(const class FObjectInitialize
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-	CurrentTrackState = ETrackerState::Idle;
+	CurrentTrackState = EState::Idle;
+	bCriticalTracker = false;
 	// ...
+}
+
+void UPCObjectiveTracker_Base::BeginPlay() 
+{
+	Super::BeginPlay();
+	TrackerBranches.MyOwner = Cast<AActor>(GetOuter());
 }
 
 // Called every frame
@@ -19,11 +26,11 @@ void UPCObjectiveTracker_Base::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	//TODO set it to repNotify for these
-	if (GetTrackerState() == ETrackerState::Activated)
+	if (GetTrackerState() == EState::Activated)
 	{
 		TrackerBranches.RunBranch();
 		if (TrackerBranches.bCompleted)
-			SetTrackerState(TrackerBranches.bSuccessBranch ? ETrackerState::Succeed : ETrackerState::Failed);
+			SetTrackerState(TrackerBranches.bSuccessBranch ? EState::Succeed : EState::Failed);
 	}
 }
 
@@ -31,20 +38,23 @@ void UPCObjectiveTracker_Base::SucceededEvent()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Tracker Objective Succeeded"));
 	UE_LOG(LogTemp, Warning, TEXT("Tracker Objective Succeeded"));
+	OnTrackerSuccessDelegate.Broadcast();
 }
 
 void UPCObjectiveTracker_Base::FailedEvent()
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, TEXT("Tracker Objective Failed"));
 	UE_LOG(LogTemp, Warning, TEXT("Tracker Objective Failed"));
+	OnTrackerFailedDelegate.Broadcast();
+	//TODO if Critical Force Objective to fail
 }
 
-void UPCObjectiveTracker_Base::SetTrackerState(ETrackerState SetState)
+void UPCObjectiveTracker_Base::SetTrackerState(EState SetState)
 {
 	CurrentTrackState = SetState;
 
-	if (CurrentTrackState == ETrackerState::Succeed)
+	if (CurrentTrackState == EState::Succeed)
 		SucceededEvent();
-	if (CurrentTrackState == ETrackerState::Failed)
+	if (CurrentTrackState == EState::Failed)
 		FailedEvent();
 }

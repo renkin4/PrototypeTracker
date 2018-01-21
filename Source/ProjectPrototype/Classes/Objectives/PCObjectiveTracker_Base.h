@@ -5,23 +5,12 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "UObject/UnrealType.h"
+#include "GameFramework/Actor.h"
+#include "PCStateType.h"
 #include "PCObjectiveTracker_Base.generated.h"
 
-UENUM(BlueprintType)
-enum class ETrackerState : uint8
-{
-	// Tracker on Idle state will not run.
-	Idle,
-
-	// Tracker Run on Activated
-	Activated,
-
-	// On Succeeded Tracker will stop and pass info to Objective Actor
-	Succeed,
-
-	// On Failed Tracker will stop and pass info to Objective Actor
-	Failed
-};
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTrackSuccessDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTrackFailDelegate);
 
 UENUM(BlueprintType)
 enum class EComparison : uint8
@@ -44,16 +33,15 @@ enum class ETrackCondition : uint8
 	*/
 	DistanceBetweenActor,
 	ActorVariable_Float,
-
-	//Not Working Yet
-	ActorVariable_Vector,
 	ActorVariable_Boolean,
 	ActorVariable_Int,
 
 	//Not Working Yet
-	ActorArrayLength_Int
+	ActorArrayLength_Int,
+	GameTime
 };
 
+// Properties of Trackers that will be grab by pointing on actors in the world
 USTRUCT(BlueprintType)
 struct PROJECTPROTOTYPE_API FTrackerProperties
 {
@@ -61,6 +49,10 @@ struct PROJECTPROTOTYPE_API FTrackerProperties
 	// The Distance between 2 Values that's inserted
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
 	float Distance;
+
+	// Choose the Time Limit you wish to compare to
+	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
+	float GameTime;
 
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
 	AActor* TargettedActor;
@@ -83,13 +75,15 @@ struct PROJECTPROTOTYPE_API FTrackerProperties
 		TargettedVariableName2 = TEXT("");
 	}
 };
+
 //TODO shift this branch into another Class
-//TODO Refactor due to redundancy
 //Branch for objectives
 USTRUCT(BlueprintType)
 struct PROJECTPROTOTYPE_API FTrackerBranch
 {
 	GENERATED_USTRUCT_BODY()
+
+	AActor* MyOwner;
 
 	// Track Condition are Types of Variable you wish to used to compare with
 	UPROPERTY(EditInstanceOnly, Category = "Tracker")
@@ -134,11 +128,13 @@ struct PROJECTPROTOTYPE_API FTrackerBranch
 		case ETrackCondition::ActorVariable_Int:
 			Track(TrackerProperties.TargettedActor, TrackerProperties.TargettedVariableName, TrackerProperties.TargettedActor2, TrackerProperties.TargettedVariableName2, 0);
 			break;
+		case ETrackCondition::GameTime:
+			Track(TrackerProperties.GameTime);
+			break;
 		default:
 			break;
 		}
 	}
-
 private:
 	// Compare between 2 Numbers. Used Template due to Difference of Datatype
 	template <class TNumbers>
@@ -201,6 +197,7 @@ private:
 		}//TODO add ERROR Message for Edison and TITO if Target Not Found
 		return FoundInt;
 	}
+
 	// Get bool Variable By Feeding Object Class and Variable Name
 	const bool GetBoolByName(const AActor * Target, const FName VarName)
 	{
@@ -247,6 +244,13 @@ private:
 		bool bOut2 = GetBoolByName(TargettedActor2, TargettedName2);
 		NumCal(bOut, bOut2);
 	}
+
+	void Track(float InsertedTime) 
+	{
+		//Because i can't seem to get the world Time I save it through DeltaTime
+		// TODO refactor these into a seperate Class
+		NumCal(MyOwner->GetWorld()->TimeSeconds, InsertedTime);
+	}
 };
 
 UCLASS( ClassGroup=(Tracker), meta=(BlueprintSpawnableComponent) , Blueprintable)
@@ -254,15 +258,21 @@ class PROJECTPROTOTYPE_API UPCObjectiveTracker_Base : public UActorComponent
 {
 	GENERATED_UCLASS_BODY()
 protected:
+	virtual void BeginPlay() override;
+
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	//Current State of the Tracker
-	ETrackerState CurrentTrackState;
+	EState CurrentTrackState;
 
 	//Branches for Multiple task Objectives
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Branches")
 	FTrackerBranch TrackerBranches;
+
+	// Check if this Branch is Optional Tracker or Critical
+	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
+	uint8 bCriticalTracker : 1;
 
 	//Events on Objective Succeeded
 	void SucceededEvent();
@@ -271,15 +281,25 @@ protected:
 	void FailedEvent();
 
 public:
+	UPROPERTY(BlueprintAssignable, Category = "Delegate")
+	FOnTrackSuccessDelegate OnTrackerSuccessDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = "Delegate")
+	FOnTrackFailDelegate OnTrackerFailedDelegate;
+
 	//Set Tracker State and send signal to check if Succeeded
 	UFUNCTION(BlueprintCallable, Category = "Tracker States")
-	void SetTrackerState(ETrackerState SetState);
+	void SetTrackerState(EState SetState);
 
 	//Get Current State For Tracker
 	UFUNCTION(BlueprintPure, Category = "Tracker States")
-	ETrackerState GetTrackerState() { return CurrentTrackState; }
+	EState GetTrackerState() { return CurrentTrackState; }
 
 	//Activate Objective
 	UFUNCTION(BlueprintCallable, Category = "Tracker States")
-	void RunState() { CurrentTrackState = ETrackerState::Activated; }
+	void RunState() { CurrentTrackState = EState::Activated; }
+
+	FTrackerBranch GetTrackerBranch() { return TrackerBranches; }
+
+	bool GetIsCriticalTracker() { return bCriticalTracker; }
 };
