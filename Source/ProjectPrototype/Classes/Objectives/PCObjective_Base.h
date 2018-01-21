@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "PCStateType.h"
 #include "PCObjective_Base.generated.h"
 
 class UPCObjectiveTracker_Base;
@@ -13,6 +12,21 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnObjSuccessDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnObjFailDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRefreshUI);
 
+UENUM(BlueprintType)
+enum class EState : uint8
+{
+	// Tracker on Idle state will not run.
+	Idle,
+
+	// Tracker Run on Activated
+	Activated,
+
+	// On Succeeded Tracker will stop and pass info to Objective Actor
+	Succeed,
+
+	// On Failed Tracker will stop and pass info to Objective Actor
+	Failed
+};
 
 UCLASS()
 class PROJECTPROTOTYPE_API APCObjective_Base : public AActor
@@ -25,8 +39,7 @@ protected:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-protected:
-	UPROPERTY(BlueprintReadWrite, Category = "Objective State")
+	UPROPERTY(EditInstanceOnly, Category = "Objective State")
 	EState ObjectiveState;
 
 	UPROPERTY(EditInstanceOnly, Category = "Objective Properties")
@@ -38,8 +51,6 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Objective Event")
 	void FailedEvent();
 
-	UFUNCTION(BlueprintCallable, Category = "Objective Event")
-	void OnAllCriticalMissionSucceeded();
 private :
 	TArray<UPCObjectiveTracker_Base*> AllTrackerComponents;
 
@@ -47,11 +58,12 @@ private :
 
 	TArray<UPCObjectiveTracker_Base*> FailedTrackerHolder;
 
-	int32 AmountOfCriticalTrackerSuccess;
-
 	void SaveAllTrackerComponent();
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "Objective State")
+	void RunState();
+
 	UPROPERTY(BlueprintAssignable, Category = "Delegate")
 	FOnObjSuccessDelegate OnObjSuccessDelegate;
 
@@ -70,11 +82,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Objective State")
 	void ForceFail();
 
-	UFUNCTION(BlueprintCallable, Category = "Objective State")
-	void RunCheckList();
-
 	UFUNCTION(BlueprintCallable, Category = "Objective Tracker")
 	void ActivateTracker(int32 TrackerIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "Objective Tracker")
+	void DeactivateTracker(int32 TrackerIndex);
 
 	UFUNCTION(BlueprintPure, Category = "Objective Tracker")
 	UPCObjectiveTracker_Base*  GetTracker(int32 TrackerIndex);
