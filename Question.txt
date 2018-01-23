@@ -1,0 +1,4 @@
+
+Handler only can handle Internal Timer 
+Deactivate not working
+How to pass information on to Obj? Every tick??

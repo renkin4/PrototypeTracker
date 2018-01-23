@@ -1,12 +1,12 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright AmmoboxStudios Sdn Bhd 2009-2018
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "PCObjective_Base.generated.h"
+#include "ObjectiveActor.generated.h"
 
-class UPCObjectiveTracker_Base;
+class UObjectiveTrackerComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnObjSuccessDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnObjFailDelegate);
@@ -29,10 +29,13 @@ enum class EState : uint8
 };
 
 UCLASS()
-class PROJECTPROTOTYPE_API APCObjective_Base : public AActor
+class PROJECTPROTOTYPE_API AObjectiveActor : public AActor
+
 {
 	GENERATED_UCLASS_BODY()
 protected:
+	virtual void PreInitializeComponents() override;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -51,14 +54,12 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Objective Event")
 	void FailedEvent();
 
-private :
-	TArray<UPCObjectiveTracker_Base*> AllTrackerComponents;
-
-	TArray<UPCObjectiveTracker_Base*> SucceededTrackerHolder;
-
-	TArray<UPCObjectiveTracker_Base*> FailedTrackerHolder;
+private:
+	TArray<UObjectiveTrackerComponent*> AllTrackerComponents;
 
 	void SaveAllTrackerComponent();
+
+	void CheckIfActivated();
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Objective State")
@@ -73,6 +74,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Delegate")
 	FOnRefreshUI OnRefreshUI;
 
+	//TODO Revamp this to push Data to UI instead
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Objective UI")
 	void RefreshUI();
 
@@ -83,20 +85,23 @@ public:
 	void ForceFail();
 
 	UFUNCTION(BlueprintCallable, Category = "Objective Tracker")
-	void ActivateTracker(int32 TrackerIndex);
-
-	UFUNCTION(BlueprintCallable, Category = "Objective Tracker")
-	void DeactivateTracker(int32 TrackerIndex);
+	void ActivateTracker(int32 TrackerIndex, bool bShouldActivate);
 
 	UFUNCTION(BlueprintPure, Category = "Objective Tracker")
-	UPCObjectiveTracker_Base*  GetTracker(int32 TrackerIndex);
+	UObjectiveTrackerComponent*  GetTracker(int32 TrackerIndex);
 
 	UFUNCTION(BlueprintPure, Category = "Objective State")
-	EState GetObjectiveState() { return ObjectiveState; }
+	const EState GetObjectiveState()
+	{ return ObjectiveState; }
 
 	UFUNCTION(BlueprintCallable, Category = "Objective State")
 	void SetObjectiveState(EState NewState);
 
 	UFUNCTION(BlueprintPure, Category = "Objective Property")
-	FText GetObjectiveName() { return ObjectiveName; }
+		const FText GetObjectiveName()
+	{ return ObjectiveName; }
+
+	UFUNCTION(BlueprintPure, Category = "Objective Tracker")
+	TArray<UObjectiveTrackerComponent*> GetAllTracker()
+	{ return AllTrackerComponents; }
 };

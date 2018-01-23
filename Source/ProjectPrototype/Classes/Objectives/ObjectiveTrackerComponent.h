@@ -1,12 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "UObject/UnrealType.h"
-#include "GameFramework/Actor.h"
-#include "PCObjectiveTracker_Base.generated.h"
+#include "ObjectiveTrackerComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTrackerFinishesDelegate);
 
@@ -19,8 +15,7 @@ enum class EComparison : uint8
 	NotEqual,
 	Equal,
 	MoreThen,
-	LessThen,
-	NotExist
+	LessThen
 };
 
 UENUM(BlueprintType)
@@ -36,7 +31,8 @@ enum class ETrackCondition : uint8
 
 	//Not Working Yet
 	ActorArrayLength_Int,
-	GameTime
+	GameTime,
+	ActorKilled
 };
 
 // Properties of Trackers that will be grab by pointing on actors in the world
@@ -44,25 +40,25 @@ USTRUCT(BlueprintType)
 struct PROJECTPROTOTYPE_API FTrackerProperties
 {
 	GENERATED_USTRUCT_BODY()
-	// The Distance between 2 Values that's inserted
-	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
-	float Distance;
+		// The Distance between 2 Values that's inserted
+		UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
+		float Distance;
 
 	// Choose the Time Limit you wish to compare to
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
-	float WorldTimeLimit;
+		float WorldTimeLimit;
 
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
-	AActor* TargettedActor;
+		AActor* TargettedActor;
 
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
-	FName TargettedVariableName;
+		FName TargettedVariableName;
 
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
-	AActor* TargettedActor2;
+		AActor* TargettedActor2;
 
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
-	FName TargettedVariableName2;
+		FName TargettedVariableName2;
 
 	FTrackerProperties()
 	{
@@ -74,11 +70,13 @@ struct PROJECTPROTOTYPE_API FTrackerProperties
 	}
 };
 
-UCLASS( ClassGroup=(Tracker), meta=(BlueprintSpawnableComponent) , Blueprintable)
-class PROJECTPROTOTYPE_API UPCObjectiveTracker_Base : public UActorComponent
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), Blueprintable)
+class PROJECTPROTOTYPE_API UObjectiveTrackerComponent : public UActorComponent
 {
 	GENERATED_UCLASS_BODY()
+
 protected:
+	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	// Called every frame
@@ -86,7 +84,10 @@ protected:
 
 	// To briefly explain what player have to know to complete this tracker
 	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
-	FText TrackerDescription;
+		FText TrackerDescription;
+
+	// For UI to show player's the Requirement Needed to complete this tracker
+	FText TrackerRequirement;
 
 	// Track Condition are Types of Variable you wish to used to compare with
 	UPROPERTY(EditInstanceOnly, Category = "Tracker")
@@ -100,9 +101,12 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditInstanceOnly, Category = "Tracker Properties")
 	FTrackerProperties TrackerProperties;
 
-	void OnCompleted();
-	
+	UPROPERTY(EditInstanceOnly, Category = "Tracker Properties")
+	uint8 bSuccess : 1;
+
 private:
+	void OnCompleted();
+
 	// Compare between 2 Numbers. Used Template due to Difference of Datatype
 	template <class TNumbers>
 	FORCEINLINE TNumbers NumCal(TNumbers Val, TNumbers Val2)
@@ -125,8 +129,6 @@ private:
 			if (Val < Val2)
 				SetCompleted(true);
 			break;
-		case EComparison::NotExist:
-			break;
 		default:
 			break;
 		}
@@ -144,7 +146,7 @@ private:
 
 	// Get Int Variable By Feeding Object Class and Variable Name
 	const int32 GetIntByName(const AActor * Target, const FName VarName);
-	
+
 	// Get bool Variable By Feeding Object Class and Variable Name
 	const bool GetBoolByName(const AActor * Target, const FName VarName);
 
@@ -163,6 +165,11 @@ private:
 	// Time Tracker
 	void Track(const float InsertedTime);
 
+	// Track an actor existence in the world
+	void Track(AActor * SelectedActor);
+
+	//TODO track Internal Time
+
 public:
 	// Use this to Bind to a Function that you wish to happen on Tracker Finishes
 	UPROPERTY(BlueprintAssignable, Category = "Delegate")
@@ -174,5 +181,15 @@ public:
 
 	// Get the State of the Tracker
 	UFUNCTION(BlueprintPure, Category = "Tracker State")
-	const bool GetCompleted() { return bCompleted; }
+	const bool GetCompleted()
+	{ return bCompleted; }
+
+	UFUNCTION(BlueprintPure, Category = "Tracker Info")
+		FText GetTrackerDescription()
+	{ return TrackerDescription; }
+
+	UFUNCTION(BlueprintPure, Category = "Tracker Info")
+		FText GetTrackerRequirement()
+	{ return TrackerRequirement; }
+
 };
